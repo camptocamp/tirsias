@@ -1,0 +1,7 @@
+/tirsias
+.*.swp
+*.out
+coverage
+*~
+*.log
+release/
