@@ -24,6 +24,7 @@ var opts struct {
 	ClusterName             string `long:"cluster-name" description:"Name of the Kubernetes cluster." env:"CLUSTER_NAME"`
 	ServiceAccountName      string `long:"service-account-name" description:"Service account name Grafana should use." env:"SERVICE_ACCOUNT_NAME"`
 	ServiceAccountNamespace string `long:"service-account-namespace" description:"Service account namespace Grafana should use." env:"SERVICE_ACCOUNT_NAMESPACE"`
+	KubernetesPublicAddress string `long:"kubernetes-public-address" description:"Public address of the Kubernetes cluster." env:"KUBERNETES_PUBLIC_ADDRESS"`
 	Grafana                 struct {
 		URL   string `long:"grafana-url" description:"Address of your Grafana instance." env:"GRAFANA_URL"`
 		Token string `long:"grafana-token" description:"Authentication token for the Grafana instance." env:"GRAFANA_TOKEN"`
@@ -109,7 +110,7 @@ func main() {
 			Name:   fmt.Sprintf("%s:%s:%s", opts.ClusterName, prometheus.GetNamespace(), prometheus.GetName()),
 			Type:   "prometheus",
 			Access: "proxy",
-			URL:    fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:9090/proxy/", kubeConfig.Host, prometheus.GetNamespace(), prometheus.GetName()),
+			URL:    fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:9090/proxy/", opts.KubernetesPublicAddress, prometheus.GetNamespace(), prometheus.GetName()),
 			JSONData: map[string]string{
 				"httpMethod":      "GET",
 				"httpHeaderName1": "Authorization",
