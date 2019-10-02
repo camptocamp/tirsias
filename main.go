@@ -137,6 +137,7 @@ func main() {
 			if err != nil {
 				log.Errorf("failed to update datasource: %s", err)
 			}
+			log.Infof("Datasource `%s' updated.\n", generatedDS.Name)
 			/*
 				if ds.Type != generatedDS.Type || ds.Access != generatedDS.Access || ds.URL != generatedDS.URL {
 					generatedDS.ID = ds.ID
