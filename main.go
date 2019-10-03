@@ -10,11 +10,12 @@ import (
 	"github.com/grafana-tools/sdk"
 	"github.com/jessevdk/go-flags"
 	log "github.com/sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -93,71 +94,74 @@ func main() {
 		log.Fatalf("failed to verify Grafana datasources: %s", err)
 	}
 
-	watcher, err := kubePromClient.MonitoringV1().Prometheuses("").Watch(metav1.ListOptions{})
-	if err != nil {
-		log.Fatalf("failed to watch pods: %s", err)
-	}
-	ch := watcher.ResultChan()
+	watchlist := cache.NewListWatchFromClient(
+		kubePromClient.MonitoringV1().RESTClient(),
+		string("prometheuses"),
+		apiv1.NamespaceAll,
+		fields.Everything(),
+	)
+
+	_, controller := cache.NewInformer(
+		watchlist,
+		&promOperatorV1.Prometheus{},
+		0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				prometheus, ok := obj.(*promOperatorV1.Prometheus)
+				if !ok {
+					log.Errorf("unexpected type: %+v", obj)
+				}
+
+				createOrUpdateDatasource(
+					grafanaClient,
+					opts.ClusterName,
+					opts.KubernetesPublicAddress,
+					prometheusToken,
+					prometheus,
+				)
+			},
+			DeleteFunc: func(obj interface{}) {
+				prometheus, ok := obj.(*promOperatorV1.Prometheus)
+				if !ok {
+					log.Errorf("unexpected type: %+v", obj)
+				}
+				ds := generateDatasource(
+					opts.ClusterName,
+					prometheus.GetNamespace(),
+					prometheus.GetName(),
+					opts.KubernetesPublicAddress,
+					prometheusToken,
+				)
+				_, err := grafanaClient.DeleteDatasourceByName(ds.Name)
+				if err != nil {
+					log.Errorf("failed to delete datasource: %s", err)
+				}
+				log.Infof("Datasource `%s' deleted.\n", ds.Name)
+			},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				prometheus, ok := newObj.(*promOperatorV1.Prometheus)
+				if !ok {
+					log.Errorf("unexpected type: %+v", newObj)
+				}
+
+				createOrUpdateDatasource(
+					grafanaClient,
+					opts.ClusterName,
+					opts.KubernetesPublicAddress,
+					prometheusToken,
+					prometheus,
+				)
+			},
+		},
+	)
+
+	stop := make(chan struct{})
+	defer close(stop)
+	go controller.Run(stop)
 
 	log.Infoln("Watching prometheuses...")
 
-	for event := range ch {
-		prometheus, ok := event.Object.(*promOperatorV1.Prometheus)
-		if !ok {
-			log.Fatalf("unexpected type")
-		}
-		generatedDS := sdk.Datasource{
-			Name:   fmt.Sprintf("%s:%s:%s", opts.ClusterName, prometheus.GetNamespace(), prometheus.GetName()),
-			Type:   "prometheus",
-			Access: "proxy",
-			URL:    fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:9090/proxy/", opts.KubernetesPublicAddress, prometheus.GetNamespace(), prometheus.GetName()),
-			JSONData: map[string]string{
-				"httpMethod":      "GET",
-				"httpHeaderName1": "Authorization",
-			},
-			SecureJSONData: map[string]string{
-				"httpHeaderValue1": fmt.Sprintf("Bearer %s", prometheusToken),
-			},
-		}
-
-		switch event.Type {
-		case watch.Added, watch.Modified:
-			ds, err := grafanaClient.GetDatasourceByName(generatedDS.Name)
-			if err != nil {
-				_, err = grafanaClient.CreateDatasource(generatedDS)
-				if err != nil {
-					log.Errorf("failed to create datasource: %s", err)
-				}
-				log.Infof("Datasource `%s' created.\n", generatedDS.Name)
-				break
-			}
-
-			generatedDS.ID = ds.ID
-			_, err = grafanaClient.UpdateDatasource(generatedDS)
-			if err != nil {
-				log.Errorf("failed to update datasource: %s", err)
-			}
-			log.Infof("Datasource `%s' updated.\n", generatedDS.Name)
-			/*
-				if ds.Type != generatedDS.Type || ds.Access != generatedDS.Access || ds.URL != generatedDS.URL {
-					generatedDS.ID = ds.ID
-					_, err := grafanaClient.UpdateDatasource(generatedDS)
-					if err != nil {
-						log.Errorf("failed to update datasource: %s", err)
-					}
-					log.Infof("Datasource `%s' updated.\n", generatedDS.Name)
-				}
-			*/
-		case watch.Deleted:
-			_, err := grafanaClient.DeleteDatasourceByName(generatedDS.Name)
-			if err != nil {
-				log.Errorf("failed to delete datasource: %s", err)
-			}
-			log.Infof("Datasource `%s' deleted.\n", generatedDS.Name)
-		case watch.Error:
-			log.Errorf("watcher error encountered with pod `%s'", "foo")
-		}
-	}
+	select {}
 }
 
 func getKubeConfig(kubeConfigPath string) (config *rest.Config, err error) {
@@ -167,4 +171,46 @@ func getKubeConfig(kubeConfigPath string) (config *rest.Config, err error) {
 		config, err = rest.InClusterConfig()
 	}
 	return
+}
+
+func generateDatasource(clusterName, namespace, name, kubernetesPublicAddress, prometheusToken string) sdk.Datasource {
+	return sdk.Datasource{
+		Name:   fmt.Sprintf("%s:%s:%s", clusterName, namespace, name),
+		Type:   "prometheus",
+		Access: "proxy",
+		URL:    fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:9090/proxy/", kubernetesPublicAddress, namespace, name),
+		JSONData: map[string]string{
+			"httpMethod":      "GET",
+			"httpHeaderName1": "Authorization",
+		},
+		SecureJSONData: map[string]string{
+			"httpHeaderValue1": fmt.Sprintf("Bearer %s", prometheusToken),
+		},
+	}
+}
+
+func createOrUpdateDatasource(grafanaClient *sdk.Client, clusterName, kubernetesPublicAddress, prometheusToken string, prometheus *promOperatorV1.Prometheus) {
+	ds := generateDatasource(
+		clusterName,
+		prometheus.GetNamespace(),
+		prometheus.GetName(),
+		kubernetesPublicAddress,
+		prometheusToken,
+	)
+
+	returnedDatasource, err := grafanaClient.GetDatasourceByName(ds.Name)
+	if err != nil {
+		_, err = grafanaClient.CreateDatasource(ds)
+		if err != nil {
+			log.Errorf("failed to create datasource: %s", err)
+		}
+		log.Infof("Datasource `%s' created.\n", ds.Name)
+	} else {
+		ds.ID = returnedDatasource.ID
+		_, err = grafanaClient.UpdateDatasource(ds)
+		if err != nil {
+			log.Errorf("failed to update datasource: %s", err)
+		}
+		log.Infof("Datasource `%s' updated.\n", ds.Name)
+	}
 }
