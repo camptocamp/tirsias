@@ -173,12 +173,16 @@ func getKubeConfig(kubeConfigPath string) (config *rest.Config, err error) {
 	return
 }
 
-func generateDatasource(clusterName, namespace, name, kubernetesPublicAddress, prometheusToken string) sdk.Datasource {
+func generateStandardExternalURL(kubernetesPublicAddress, namespace, name string) string {
+	return fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:9090/proxy/", kubernetesPublicAddress, namespace, name)
+}
+
+func generateDatasource(clusterName, namespace, name, externalURL, prometheusToken string) sdk.Datasource {
 	return sdk.Datasource{
 		Name:   fmt.Sprintf("%s:%s:%s", clusterName, namespace, name),
 		Type:   "prometheus",
 		Access: "proxy",
-		URL:    fmt.Sprintf("%s/api/v1/namespaces/%s/services/%s:9090/proxy/", kubernetesPublicAddress, namespace, name),
+		URL:    externalURL,
 		JSONData: map[string]string{
 			"httpMethod":      "GET",
 			"httpHeaderName1": "Authorization",
@@ -190,11 +194,19 @@ func generateDatasource(clusterName, namespace, name, kubernetesPublicAddress, p
 }
 
 func createOrUpdateDatasource(grafanaClient *sdk.Client, clusterName, kubernetesPublicAddress, prometheusToken string, prometheus *promOperatorV1.Prometheus) {
+
+	var externalURL string
+	if prometheus.Spec.ExternalURL != "" {
+		externalURL = prometheus.Spec.ExternalURL
+	} else {
+		externalURL = generateStandardExternalURL(kubernetesPublicAddress, prometheus.GetNamespace(), prometheus.GetName())
+	}
+
 	ds := generateDatasource(
 		clusterName,
 		prometheus.GetNamespace(),
 		prometheus.GetName(),
-		kubernetesPublicAddress,
+		externalURL,
 		prometheusToken,
 	)
 
