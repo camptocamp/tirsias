@@ -39,6 +39,7 @@ var (
 )
 
 func main() {
+	log.SetReportCaller(true)
 	parser := flags.NewParser(&opts, flags.Default)
 	_, err := parser.Parse()
 	if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
