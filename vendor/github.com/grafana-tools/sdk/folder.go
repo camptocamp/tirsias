@@ -19,29 +19,21 @@ package sdk
    ॐ तारे तुत्तारे तुरे स्व
 */
 
-type User struct {
-	ID             uint   `json:"id"`
-	Login          string `json:"login"`
-	Name           string `json:"name"`
-	Email          string `json:"email"`
-	Theme          string `json:"theme"`
-	OrgID          uint   `json:"orgId"`
-	Password       string `json:"password"`
-	IsGrafanaAdmin bool   `json:"isGrafanaAdmin"`
-}
-
-type UserRole struct {
-	LoginOrEmail string `json:"loginOrEmail"`
-	Role         string `json:"role"`
-}
-
-type UserPermissions struct {
-	IsGrafanaAdmin bool `json:"isGrafanaAdmin"`
-}
-
-type PageUsers struct {
-	TotalCount int    `json:"totalCount"`
-	Users      []User `json:"users"`
-	Page       int    `json:"page"`
-	PerPage    int    `json:"perPage"`
+// Folder as described in the doc
+// https://grafana.com/docs/grafana/latest/http_api/folder/#get-all-folders
+type Folder struct {
+	ID        int    `json:"id"`
+	UID       string `json:"uid"`
+	Title     string `json:"title"`
+	URL       string `json:"url"`
+	HasAcl    bool   `json:"has_acl"`
+	CanSave   bool   `json:"can_save"`
+	CanEdit   bool   `json:"can_edit"`
+	CanAdmin  bool   `json:"can_admin"`
+	CreatedBy string `json:"created_by"`
+	Created   string `json:"created"`
+	UpdatedBy string `json:"updated_by"`
+	Updated   string `json:"updated"`
+	Version   int    `json:"version"`
+	Overwrite bool   `json:"overwrite"`
 }

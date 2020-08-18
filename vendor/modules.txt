@@ -44,7 +44,7 @@ github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 # github.com/gosimple/slug v1.7.0
 github.com/gosimple/slug
-# github.com/grafana-tools/sdk v0.0.0-20190930195914-929d044ea55b => /home/ldepriester/go/src/github.com/grafana-tools/sdk
+# github.com/grafana-tools/sdk v0.0.0-20200506131932-b2c0c290ea74
 github.com/grafana-tools/sdk
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 github.com/gregjones/httpcache
@@ -70,15 +70,17 @@ github.com/modern-go/concurrent
 github.com/modern-go/reflect2
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
 # github.com/rainycape/unidecode v0.0.0-20150907023854-cb7f23ec59be
 github.com/rainycape/unidecode
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# golang.org/x/crypto v0.0.0-20191001103751-88343688bb37
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
+# golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack

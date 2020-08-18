@@ -19,29 +19,8 @@ package sdk
    ॐ तारे तुत्तारे तुरे स्व
 */
 
-type User struct {
-	ID             uint   `json:"id"`
-	Login          string `json:"login"`
-	Name           string `json:"name"`
-	Email          string `json:"email"`
-	Theme          string `json:"theme"`
-	OrgID          uint   `json:"orgId"`
-	Password       string `json:"password"`
-	IsGrafanaAdmin bool   `json:"isGrafanaAdmin"`
-}
-
-type UserRole struct {
-	LoginOrEmail string `json:"loginOrEmail"`
-	Role         string `json:"role"`
-}
-
-type UserPermissions struct {
-	IsGrafanaAdmin bool `json:"isGrafanaAdmin"`
-}
-
-type PageUsers struct {
-	TotalCount int    `json:"totalCount"`
-	Users      []User `json:"users"`
-	Page       int    `json:"page"`
-	PerPage    int    `json:"perPage"`
+type Preferences struct {
+	Theme           string `json:"theme,omitempty"`
+	HomeDashboardId uint   `json:"homeDashboardId,omitempty"`
+	Timezone        string `json:"timezone,omitempty"`
 }

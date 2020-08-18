@@ -1,41 +1,21 @@
-<!--*- mode:markdown;mode:orgtbl -*-->
+<!--*- mode:markdown -*-->
 
 # Grafana SDK [![Go Report Card](https://goreportcard.com/badge/github.com/grafana-tools/sdk)](https://goreportcard.com/report/github.com/grafana-tools/sdk)
 
 SDK for Go language offers a library for interacting with
 [Grafana](http://grafana.org) server from Go applications.  It
 realizes many of
-[HTTP REST API](http://docs.grafana.org/reference/http_api) calls for
+[HTTP REST API](https://grafana.com/docs/grafana/latest/http_api/) calls for
 administration, client, organizations. Beside of them it allows
 creating of Grafana objects (dashboards, panels, datasources) locally
 and manipulating them for constructing dashboards programmatically.
 It would be helpful for massive operations on a large set of
-dashboards for example.
+Grafana objects.
 
 It was made foremost for
 [autograf](https://github.com/grafana-tools/autograf) project but
 later separated from it and moved to this new repository because the
 library is useful per se.
-
-Grafana operates with Javascript objects on client side so on first
-view Go language looks alien thing here.  And Grafana has GUI with
-detailed options for panel customization so in many cases you don't
-need additional automatization.  But in situations when you operates
-on hundreds of dashboards programming generation of them become not
-bad idea.  And SDK that allow you import/export, create, modify and
-validate Grafana structures is very helpful.  Golang is good enough
-choice for operations with JSON though it may be subject of discuss.
-Positives of this choice is strong typization in Go that help validate
-objects alongside with high speed of execution and nice concurrency
-patterns.  Negative aspect the same: the strong typization that add
-more verbosity to JSON parsing in comparing with Javascript or for an
-example with scripting languages like Python.  But with SDK you
-already have ready for use structures and methods so generation of
-JSONs become simple.  Anyway Grafana server made in Golang that prove
-concept for applicability of Go for that kind of tasks.
-
-And of course if you write applications in Golang and integrate them
-with Grafana then client SDK for Go will be uniquely useful.
 
 ## Library design principles
 
@@ -44,11 +24,10 @@ with Grafana then client SDK for Go will be uniquely useful.
 1. SDK maps Grafana objects (dashboard, row, panel, datasource) to
    similar Go structures but not follows exactly all Grafana
    abstractions.
-1. It doesn't use logging, instead API functions can return errors
+1. It doesn't use any logger, instead API functions could return errors
    where it need.
-1. No external deps except Go stdlib. Another exception is URL
-   slugify, SDK uses external lib "slug" for algorithm compatibility —
-   that is the same package that Grafana server uses.
+1. Prefere no external deps except Go stdlib.
+1. Cover SDK calls with unit tests.
 
 ## Examples [![GoDoc](https://godoc.org/github.com/grafana-tools/sdk?status.svg)](https://godoc.org/github.com/grafana-tools/sdk)
 
@@ -64,15 +43,17 @@ with Grafana then client SDK for Go will be uniquely useful.
 		Expr:       "sample request 1"}
 	graph.AddTarget(&target)
 	row1.Add(graph)
-    grafanaURL := "http://grafana.host"
+	grafanaURL := "http://grafana.host"
 	c := sdk.NewClient(grafanaURL, "grafana-api-key", sdk.DefaultHTTPClient)
-    response, err := c.SetDashboard(board, false)
-	err != nil {
+	response, err := c.SetDashboard(context.TODO() ,*board, sdk.SetDashboardParams{
+		Overwrite: false,
+	})
+	if err != nil {
 		fmt.Printf("error on uploading dashboard %s", board.Title)
-    } else {
-        fmt.Printf("dashboard URL: %v", grafanaURL+*resp.URL)
-    }
-```	
+	} else {
+		fmt.Printf("dashboard URL: %v", grafanaURL+*response.URL)
+	}
+```
 
 The library includes several demo apps for showing API usage:
 
@@ -87,21 +68,16 @@ You need Grafana API key with _admin rights_ for using these utilities.
 
 Of course Go development environment should be set up first. Then:
 
-    go get github.com/grafana-tools/sdk
+	go get github.com/grafana-tools/sdk
 
 Dependency packages have included into
 distro. [govendor](https://github.com/kardianos/govendor) utility used
 for vendoring.  The single dependency now is:
 
-    go get github.com/gosimple/slug
+	go get github.com/gosimple/slug
 
 The "slugify" for URLs is a simple task but this package used in
 Grafana server so it used in the SDK for the compatibility reasons.
-
-## Grafana server compability
-
-Made mostly for Grafana 3.x, works with Grafana 4.x but need more
-tests. Full support for Grafana 4.x is on the way.
 
 ## Status of REST API realization [![Coverage Status](https://coveralls.io/repos/github/grafana-tools/sdk/badge.svg?branch=master)](https://coveralls.io/github/grafana-tools/sdk?branch=master)
 
@@ -109,42 +85,46 @@ Work on full API implementation still in progress. Currently
 implemented only create/update/delete operations for dashboards and
 datasources. State of support for misc API parts noted below.
 
-<!--- 
-#+ORGTBL: SEND status orgtbl-to-gfm
-| API                    | Status          |
-|------------------------+-----------------|
-| Authorization          | only API tokens |
-| Dashboards             | partially       |
-| Datasources            | +               |
-| Organization (current) | partially       |
-| Organizations          | -               |
-| Users                  | partially       |
-| User (actual)          | partially       |
-| Snapshots              | -               |
-| Frontend settings      | -               |
-| Admin                  | -               |
--->
+| API                         | Status                    |
+|-----------------------------|---------------------------|
+| Authorization               | API tokens and Basic Auth |
+| Annotations                 | partially                 |
+| Dashboards                  | partially                 |
+| Datasources                 | +                         |
+| Alert notification channels | +                         |
+| Organization (current)      | partially                 |
+| Organizations               | partially                 |
+| Users                       | partially                 |
+| User (actual)               | partially                 |
+| Snapshots                   | -                         |
+| Frontend settings           | -                         |
+| Admin                       | partially                 |
 
-<!--- BEGIN RECEIVE ORGTBL status -->
-| API | Status |
-|---|---|
-| Authorization | only API tokens |
-| Dashboards | partially |
-| Datasources | + |
-| Organization (current) | partially |
-| Organizations | - |
-| Users | partially |
-| User (actual) | partially |
-| Snapshots | - |
-| Frontend settings | - |
-| Admin | - |
-<!--- END RECEIVE ORGTBL status -->
+There is no exact roadmap.  The integration tests are being run against the
+following Grafana versions:
 
-## Roadmap
+* [6.7.1](./travis.yml)
+* [6.6.2](/.travis.yml)
+* [6.5.3](/.travis.yml)
+* [6.4.5](/.travis.yml)
 
-* `[DONE]` Realize data structures used in a default Grafana installation for data visualizing (dashboards, datasources, panels, variables, annotations).
-* `[PROGRESS]` Support all functions of Grafana REST API for manipulating dashboards and datasources.
-* Support functions of Grafana REST API for manipulating users and organizations.
+With the following Go versions:
+
+* 1.14.x
+* 1.13.x
+* 1.12.x
+* 1.11.x
+
+I still have interest to this library development but not always have
+time for it. So I gladly accept new contributions. Drop an issue or
+[contact me](grafov@gmail.com).
+
+## Licence
+
+Distributed under Apache v2.0. All rights belong to the SDK
+authors. There is no authors list yet, you can see the full list of
+the contributors in the git history. Official repository is
+https://github.com/grafana-tools/sdk
 
 ## Collection of Grafana tools in Golang
 

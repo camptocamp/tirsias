@@ -2,12 +2,13 @@ package sdk
 
 /*
    Copyright 2016 Alexander I.Grafov <grafov@gmail.com>
+   Copyright 2016-2019 The Grafana SDK authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -63,8 +64,7 @@ type (
 		Links         []link      `json:"links"`
 		Time          Time        `json:"time"`
 		Timepicker    Timepicker  `json:"timepicker"`
-		lastPanelID   uint
-		GraphTooltip  int `json:"graphTooltip,omitempty"`
+		GraphTooltip  int         `json:"graphTooltip,omitempty"`
 	}
 	Time struct {
 		From string `json:"from"`
@@ -111,17 +111,18 @@ type (
 		Value interface{} `json:"value"` // TODO select more precise type
 	}
 	Annotation struct {
-		Name       string  `json:"name"`
-		Datasource *string `json:"datasource"`
-		ShowLine   bool    `json:"showLine"`
-		IconColor  string  `json:"iconColor"`
-		LineColor  string  `json:"lineColor"`
-		IconSize   uint    `json:"iconSize"`
-		Enable     bool    `json:"enable"`
-		Query      string  `json:"query"`
-		TextField  string  `json:"textField"`
-		TagsField  string  `json:"tagsField"`
-		Type       string  `json:"tags"`
+		Name       string   `json:"name"`
+		Datasource *string  `json:"datasource"`
+		ShowLine   bool     `json:"showLine"`
+		IconColor  string   `json:"iconColor"`
+		LineColor  string   `json:"lineColor"`
+		IconSize   uint     `json:"iconSize"`
+		Enable     bool     `json:"enable"`
+		Query      string   `json:"query"`
+		TextField  string   `json:"textField"`
+		TagsField  string   `json:"tagsField"`
+		Tags       []string `json:"tags"`
+		Type       string   `json:"type"`
 	}
 )
 
@@ -147,7 +148,7 @@ type link struct {
 type Height string
 
 func (h *Height) UnmarshalJSON(raw []byte) error {
-	if raw == nil || bytes.Compare(raw, []byte(`"null"`)) == 0 {
+	if raw == nil || bytes.Equal(raw, []byte(`"null"`)) {
 		return nil
 	}
 	if raw[0] != '"' {
@@ -170,17 +171,20 @@ func NewBoard(title string) *Board {
 		Timezone:     "browser",
 		Editable:     true,
 		HideControls: false,
-		Rows:         []*Row{}}
+		Rows:         []*Row{},
+	}
 }
 
 func (b *Board) RemoveTags(tags ...string) {
-	tagFound := make(map[string]int, len(b.Tags))
-	for i, tag := range b.Tags {
-		tagFound[tag] = i
-	}
-	for _, removeTag := range tags {
-		if i, ok := tagFound[removeTag]; ok {
-			b.Tags = append(b.Tags[:i], b.Tags[i+1:]...)
+	// order might change after removing the tags
+	for _, toRemoveTag := range tags {
+		tagLen := len(b.Tags)
+		for i, tag := range b.Tags {
+			if tag == toRemoveTag {
+				b.Tags[tagLen-1], b.Tags[i] = b.Tags[i], b.Tags[tagLen-1]
+				b.Tags = b.Tags[:tagLen-1]
+				break
+			}
 		}
 	}
 }
@@ -195,6 +199,7 @@ func (b *Board) AddTags(tags ...string) {
 			continue
 		}
 		b.Tags = append(b.Tags, tag)
+		tagFound[tag] = true
 	}
 }
 

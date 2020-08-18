@@ -19,29 +19,32 @@ package sdk
    ॐ तारे तुत्तारे तुरे स्व
 */
 
-type User struct {
-	ID             uint   `json:"id"`
-	Login          string `json:"login"`
-	Name           string `json:"name"`
-	Email          string `json:"email"`
-	Theme          string `json:"theme"`
-	OrgID          uint   `json:"orgId"`
-	Password       string `json:"password"`
-	IsGrafanaAdmin bool   `json:"isGrafanaAdmin"`
+import (
+	"context"
+	"encoding/json"
+)
+
+// HealthResponse represents the health of grafana server
+type HealthResponse struct {
+	Commit   string `json:"commit"`
+	Database string `json:"database"`
+	Version  string `json:"version"`
 }
 
-type UserRole struct {
-	LoginOrEmail string `json:"loginOrEmail"`
-	Role         string `json:"role"`
-}
+// GetHealth retrieves the health of the grafana server
+// Reflects GET BaseURL API call.
+func (r *Client) GetHealth(ctx context.Context) (HealthResponse, error) {
+	var (
+		raw []byte
+		err error
+	)
+	if raw, _, err = r.get(ctx, "/api/health", nil); err != nil {
+		return HealthResponse{}, err
+	}
 
-type UserPermissions struct {
-	IsGrafanaAdmin bool `json:"isGrafanaAdmin"`
-}
-
-type PageUsers struct {
-	TotalCount int    `json:"totalCount"`
-	Users      []User `json:"users"`
-	Page       int    `json:"page"`
-	PerPage    int    `json:"perPage"`
+	health := HealthResponse{}
+	if err := json.Unmarshal(raw, &health); err != nil {
+		return HealthResponse{}, err
+	}
+	return health, nil
 }

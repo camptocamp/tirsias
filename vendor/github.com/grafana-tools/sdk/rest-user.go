@@ -2,12 +2,13 @@ package sdk
 
 /*
    Copyright 2016 Alexander I.Grafov <grafov@gmail.com>
+   Copyright 2016-2019 The Grafana SDK authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,20 +21,22 @@ package sdk
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
 )
 
 // GetActualUser gets an actual user.
-func (r *Client) GetActualUser() (User, error) {
+// Reflects GET /api/user API call.
+func (r *Client) GetActualUser(ctx context.Context) (User, error) {
 	var (
 		raw  []byte
 		user User
 		code int
 		err  error
 	)
-	if raw, code, err = r.get("api/user", nil); err != nil {
+	if raw, code, err = r.get(ctx, "api/user", nil); err != nil {
 		return user, err
 	}
 	if code != 200 {
@@ -48,14 +51,15 @@ func (r *Client) GetActualUser() (User, error) {
 }
 
 // GetUser gets an user by ID.
-func (r *Client) GetUser(id uint) (User, error) {
+// Reflects GET /api/users/:id API call.
+func (r *Client) GetUser(ctx context.Context, id uint) (User, error) {
 	var (
 		raw  []byte
 		user User
 		code int
 		err  error
 	)
-	if raw, code, err = r.get(fmt.Sprintf("api/users/%d", id), nil); err != nil {
+	if raw, code, err = r.get(ctx, fmt.Sprintf("api/users/%d", id), nil); err != nil {
 		return user, err
 	}
 	if code != 200 {
@@ -70,14 +74,18 @@ func (r *Client) GetUser(id uint) (User, error) {
 }
 
 // GetAllUsers gets all users.
-func (r *Client) GetAllUsers() ([]User, error) {
+// Reflects GET /api/users API call.
+func (r *Client) GetAllUsers(ctx context.Context) ([]User, error) {
 	var (
 		raw   []byte
 		users []User
 		code  int
 		err   error
 	)
-	if raw, code, err = r.get("api/users", nil); err != nil {
+
+	params := url.Values{}
+	params.Set("perpage", "99999")
+	if raw, code, err = r.get(ctx, "api/users", params); err != nil {
 		return users, err
 	}
 	if code != 200 {
@@ -91,13 +99,15 @@ func (r *Client) GetAllUsers() ([]User, error) {
 	return users, err
 }
 
-// SearchUsersWithPaging search users with paging
+// SearchUsersWithPaging search users with paging.
 // query optional.  query value is contained in one of the name, login or email fields. Query values with spaces need to be url encoded e.g. query=Jane%20Doe
 // perpage optional. default 1000
 // page optional. default 1
 // http://docs.grafana.org/http_api/user/#search-users
 // http://docs.grafana.org/http_api/user/#search-users-with-paging
-func (r *Client) SearchUsersWithPaging(query *string, perpage, page *int) (PageUsers, error) {
+//
+// Reflects GET /api/users/search API call.
+func (r *Client) SearchUsersWithPaging(ctx context.Context, query *string, perpage, page *int) (PageUsers, error) {
 	var (
 		raw       []byte
 		pageUsers PageUsers
@@ -121,7 +131,7 @@ func (r *Client) SearchUsersWithPaging(query *string, perpage, page *int) (PageU
 		params["query"] = []string{*query}
 	}
 
-	if raw, code, err = r.get("api/users/search", params); err != nil {
+	if raw, code, err = r.get(ctx, "api/users/search", params); err != nil {
 		return pageUsers, err
 	}
 	if code != 200 {
