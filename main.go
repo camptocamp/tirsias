@@ -180,7 +180,7 @@ func generateStandardExternalURL(kubernetesPublicAddress, namespace, name string
 
 func generateDatasource(clusterName, namespace, name, externalURL, prometheusToken string) sdk.Datasource {
 	return sdk.Datasource{
-		Name:   fmt.Sprintf("%s:%s:%s", clusterName, namespace, name),
+		Name:   fmt.Sprintf("%s_%s_%s", clusterName, namespace, name),
 		Type:   "prometheus",
 		Access: "proxy",
 		URL:    externalURL,
