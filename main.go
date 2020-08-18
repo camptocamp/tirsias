@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -90,7 +91,7 @@ func main() {
 
 	// Verify Grafana connection by listing datasources
 	grafanaClient := sdk.NewClient(opts.Grafana.URL, opts.Grafana.Token, sdk.DefaultHTTPClient)
-	_, err = grafanaClient.GetAllDatasources()
+	_, err = grafanaClient.GetAllDatasources(context.Background())
 	if err != nil {
 		log.Fatalf("failed to verify Grafana datasources: %s", err)
 	}
@@ -133,7 +134,7 @@ func main() {
 					opts.KubernetesPublicAddress,
 					prometheusToken,
 				)
-				_, err := grafanaClient.DeleteDatasourceByName(ds.Name)
+				_, err := grafanaClient.DeleteDatasourceByName(context.Background(), ds.Name)
 				if err != nil {
 					log.Errorf("failed to delete datasource: %s", err)
 				}
@@ -203,6 +204,10 @@ func createOrUpdateDatasource(grafanaClient *sdk.Client, clusterName, kubernetes
 		externalURL = generateStandardExternalURL(kubernetesPublicAddress, prometheus.GetNamespace(), prometheus.GetName())
 	}
 
+	orgs, _ := grafanaClient.GetAllOrgs(context.Background())
+
+	log.Warningf("%+v", orgs)
+
 	ds := generateDatasource(
 		clusterName,
 		prometheus.GetNamespace(),
@@ -211,16 +216,16 @@ func createOrUpdateDatasource(grafanaClient *sdk.Client, clusterName, kubernetes
 		prometheusToken,
 	)
 
-	returnedDatasource, err := grafanaClient.GetDatasourceByName(ds.Name)
+	returnedDatasource, err := grafanaClient.GetDatasourceByName(context.Background(), ds.Name)
 	if err != nil {
-		_, err = grafanaClient.CreateDatasource(ds)
+		_, err = grafanaClient.CreateDatasource(context.Background(), ds)
 		if err != nil {
 			log.Errorf("failed to create datasource: %s", err)
 		}
 		log.Infof("Datasource `%s' created.\n", ds.Name)
 	} else {
 		ds.ID = returnedDatasource.ID
-		_, err = grafanaClient.UpdateDatasource(ds)
+		_, err = grafanaClient.UpdateDatasource(context.Background(), ds)
 		if err != nil {
 			log.Errorf("failed to update datasource: %s", err)
 		}
