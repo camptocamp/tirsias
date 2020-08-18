@@ -15,6 +15,7 @@ Application Options:
       --cluster-name=              Name of the Kubernetes cluster. [$CLUSTER_NAME]
       --service-account-name=      Service account name Grafana should use. [$SERVICE_ACCOUNT_NAME]
       --service-account-namespace= Service account namespace Grafana should use. [$SERVICE_ACCOUNT_NAMESPACE]
+      --kubernetes-public-address= Public address of the Kubernetes cluster. [$KUBERNETES_PUBLIC_ADDRESS]
 
 Grafana instance options:
       --grafana-url=               Address of your Grafana instance. [$GRAFANA_URL]
