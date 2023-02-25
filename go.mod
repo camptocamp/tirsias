@@ -30,9 +30,8 @@ require (
 	golang.org/x/tools v0.0.0-20191002234911-9ade4c73f2af // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/inf.v0 v0.9.0 // indirect
-	gopkg.in/yaml.v2 v2.2.2 // indirect
 	k8s.io/api v0.0.0-20180628040859-072894a440bd
-	k8s.io/apimachinery v0.0.0-20190223001710-c182ff3b9841
+	k8s.io/apimachinery v0.15.7
 	k8s.io/client-go v8.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf // indirect
 )
